@@ -4,6 +4,8 @@ import dotenv from "dotenv";
 import mongoose from "mongoose";
 import authRoutes from "./routes/auth.routes";
 import cartRoutes from "./routes/cart.routes";
+import checkoutRoutes from "./routes/checkout.routes";
+import paymentRoutes from "./routes/payment.routes"
 
 dotenv.config();
 
@@ -17,6 +19,10 @@ app.use(express.json());
 // ── Routes ──
 app.use("/api/auth", authRoutes);
 app.use("/api/cart", cartRoutes);
+app.use("/api/checkout", checkoutRoutes);
+app.use("/api/payment",paymentRoutes);
+
+
 
 // ── Health check ──
 app.get("/", (_req, res) => {

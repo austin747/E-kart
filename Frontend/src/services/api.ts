@@ -84,3 +84,51 @@ export async function apiClearCart(token: string): Promise<ApiResponse> {
   });
   return res.json();
 }
+
+
+export interface OrderResponse {
+  success: boolean;
+  message?: string;
+  order?: {
+    orderId: string;
+    items: unknown[];
+    totalAmount: number;
+    totalItems: number;
+    placedAt: string;
+  };
+}
+
+export async function apiCheckout(token: string): Promise<OrderResponse> {
+  const res = await fetch(`${BASE}/checkout`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return res.json();
+}
+
+export interface PaymentInitiateResponse {
+  success: boolean;
+  message?: string;
+  paymentUrl?: string;
+  paymentData?: {
+    amount: number;
+    tax_amount: number;
+    total_amount: number;
+    transaction_uuid: string;
+    product_code: string;
+    product_service_charge: number;
+    product_delivery_charge: number;
+    success_url: string;
+    failure_url: string;
+    signed_field_names: string;
+    signature: string;
+  };
+}
+
+export async function apiInitiatePayment(token: string): Promise<PaymentInitiateResponse> {
+  const res = await fetch(`${BASE}/payment/initiate`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return res.json();
+}

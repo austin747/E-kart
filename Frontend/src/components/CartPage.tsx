@@ -1,5 +1,5 @@
 // src/pages/CartPage.tsx
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   RiShoppingCartLine,
@@ -9,12 +9,17 @@ import {
   RiSubtractLine,
 } from "react-icons/ri";
 import { useAuth } from "../constant/useAuth";
+import { apiInitiatePayment, type PaymentInitiateResponse } from "../services/api";
+import EsewaRedirectForm from "../components/EsewaRedirectForm";
 
 export default function CartPage() {
-  const { user, cart, removeFromCart, updateQty, cartTotal } = useAuth();
+  const { user, token, cart, removeFromCart, updateQty, cartTotal } = useAuth();
   const navigate = useNavigate();
 
-  // if not logged in, go to login page
+  const [redirecting, setRedirecting] = useState(false);
+  const [paymentInfo, setPaymentInfo] = useState<PaymentInitiateResponse | null>(null);
+  const [checkoutError, setCheckoutError] = useState("");
+
   useEffect(() => {
     if (user === null) {
       navigate("/login");
@@ -23,12 +28,25 @@ export default function CartPage() {
 
   if (user === null) return null;
 
-  // delivery charge logic
   let delivery = 99;
   if (cartTotal >= 2000) {
     delivery = 0;
   }
   const orderTotal = cartTotal + delivery;
+
+  async function handleCheckout() {
+    if (!token) return;
+
+    setCheckoutError("");
+    const res = await apiInitiatePayment(token);
+
+    if (res.success && res.paymentUrl && res.paymentData) {
+      setPaymentInfo(res);
+      setRedirecting(true);
+    } else {
+      setCheckoutError(res.message || "Could not start payment. Please try again.");
+    }
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 px-4 py-8">
@@ -96,10 +114,9 @@ export default function CartPage() {
                   </div>
 
                   {/* Quantity controls */}
-                  {/* Quantity controls */}
                   <div className="flex items-center gap-1 border border-gray-200 rounded-lg overflow-hidden">
                     <button
-                      onClick={() => updateQty(item.id, item.quantity - 1)}  // ✅ no change needed — async onClick works fine
+                      onClick={() => updateQty(item.id, item.quantity - 1)}
                       className="px-2 py-1.5 hover:bg-gray-100 text-gray-600"
                     >
                       <RiSubtractLine size={14} />
@@ -157,11 +174,29 @@ export default function CartPage() {
                 </p>
               )}
 
-              <button className="w-full mt-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl transition">
-                Proceed to Checkout
+              {checkoutError && (
+                <p className="text-red-500 text-sm mt-3 text-center">
+                  {checkoutError}
+                </p>
+              )}
+
+              <button
+                onClick={handleCheckout}
+                disabled={redirecting}
+                className="w-full mt-4 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white font-semibold py-3 rounded-xl transition"
+              >
+                {redirecting ? "Redirecting to eSewa..." : "Proceed to Checkout"}
               </button>
             </div>
           </div>
+        )}
+
+        {/* Auto-submit form — renders invisibly and redirects to eSewa */}
+        {redirecting && paymentInfo?.paymentUrl && paymentInfo?.paymentData && (
+          <EsewaRedirectForm
+            paymentUrl={paymentInfo.paymentUrl}
+            paymentData={paymentInfo.paymentData}
+          />
         )}
 
       </div>
