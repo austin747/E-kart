@@ -1,9 +1,15 @@
+import { useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
 
 export default function PaymentSuccess() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const orderId = params.get("orderId");
+
+  useEffect(() => {
+    toast.success("Payment successful! 🎉");   // ✅ fires once when page loads
+  }, []);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">

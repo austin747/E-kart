@@ -10,6 +10,7 @@ import {
   apiUpdateCart,
 } from "../services/api";
 import { AuthContext } from "./AuthContextDef";
+import toast from "react-hot-toast";
 
 interface User {
   name: string;
@@ -92,6 +93,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       quantity: 1,
     });
     await refreshCart(token);
+    toast.success(`${product.name} added to cart`);
   }
 
   async function removeFromCart(id: number) {

@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { RiUserLine, RiLockLine, RiShoppingBag3Line } from "react-icons/ri";
 import { useAuth } from "../constant/useAuth";
+import toast from "react-hot-toast";
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -21,6 +22,7 @@ export default function LoginPage() {
   const success = await login(email, password);  // ✅ add await
 
   if (success === true) {
+    toast.success("Login successful! Welcome back 👋");
     navigate("/");
   } else {
     setError("Wrong email or password. Not registered yet?");
