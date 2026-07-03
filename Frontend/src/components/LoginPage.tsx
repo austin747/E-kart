@@ -5,6 +5,8 @@ import { RiUserLine, RiLockLine, RiShoppingBag3Line } from "react-icons/ri";
 import { useAuth } from "../constant/useAuth";
 import toast from "react-hot-toast";
 
+
+
 export default function LoginPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -30,8 +32,11 @@ export default function LoginPage() {
 }
 
   return (
+
     <div className="min-h-screen bg-linear-to-br from-blue-50 to-blue-100 flex items-center justify-center px-4">
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-8">
+
+
 
         {/* Header */}
         <div className="flex flex-col items-center mb-8">
@@ -101,5 +106,6 @@ export default function LoginPage() {
 
       </div>
     </div>
+    
   );
 }

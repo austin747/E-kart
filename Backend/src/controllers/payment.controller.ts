@@ -117,9 +117,6 @@ export async function verifyPayment(req: Request, res: Response): Promise<void> 
       return;
     }
 
-    // const esewaStatus = payload.status;  //payment-test
-
-
 
     transaction.status = "COMPLETE";
     transaction.esewaTransactionCode = payload.transaction_code;

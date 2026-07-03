@@ -6,8 +6,8 @@ import crypto from "crypto";
 const SECRET_KEY = process.env.ESEWA_SECRET_KEY as string;
 
 // 👇 CHANGE these two values to match a REAL pending transaction from your DB
-const totalAmount = "9996";
-const transactionUuid = "f124f1eb-5d4f-4c7f-b1a4-5eca5203ec74";
+const totalAmount = "3999";
+const transactionUuid = "f81bee5c-0599-4435-9604-6b444a034a10";
 
 const productCode = "EPAYTEST";
 
