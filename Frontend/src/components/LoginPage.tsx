@@ -1,42 +1,51 @@
 // src/pages/LoginPage.tsx
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { RiUserLine, RiLockLine, RiShoppingBag3Line } from "react-icons/ri";
 import { useAuth } from "../constant/useAuth";
 import toast from "react-hot-toast";
 
-
-
-export default function LoginPage() {
-  const { login } = useAuth();
+export default function LoginPage(): React.ReactElement {
+  const { login, user } = useAuth();
   const navigate = useNavigate();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
- async function handleLogin() {
-  if (email === "" || password === "") {
-    setError("Please fill in all fields.");
-    return;
-  }
+  // ✅ Role-based redirect (clean + reactive)
+  useEffect(() => {
+    if (!user) return;
 
-  const success = await login(email, password);  // ✅ add await
+    if (user.role === "admin") {
+      navigate("/dashboard/admin");
+    } else if (user.role === "retailer") {
+      navigate("/dashboard/retailer");
+    } else {
+      navigate("/");
+    }
+  }, [user, navigate]);
 
-  if (success === true) {
-    toast.success("Login successful! Welcome back 👋");
-    navigate("/");
-  } else {
-    setError("Wrong email or password. Not registered yet?");
+  // ✅ Login handler (clean, no redirect logic here)
+  async function handleLogin() {
+    if (email === "" || password === "") {
+      setError("Please fill in all fields.");
+      return;
+    }
+
+    const success = await login(email, password);
+
+    if (success) {
+      toast.success("Login successful! Welcome back 👋");
+      setError("");
+    } else {
+      setError("Wrong email or password. Not registered yet?");
+    }
   }
-}
 
   return (
-
     <div className="min-h-screen bg-linear-to-br from-blue-50 to-blue-100 flex items-center justify-center px-4">
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-8">
-
-
 
         {/* Header */}
         <div className="flex flex-col items-center mb-8">
@@ -47,14 +56,14 @@ export default function LoginPage() {
           <p className="text-gray-500 text-sm mt-1">Sign in to your account</p>
         </div>
 
-        {/* Error message */}
+        {/* Error */}
         {error !== "" && (
           <div className="bg-red-50 border border-red-200 text-red-600 text-sm rounded-lg px-4 py-2.5 mb-5">
             {error}
           </div>
         )}
 
-        {/* Email field */}
+        {/* Email */}
         <div className="mb-4">
           <label className="block text-sm font-medium text-gray-700 mb-1.5">
             Email
@@ -71,7 +80,7 @@ export default function LoginPage() {
           </div>
         </div>
 
-        {/* Password field */}
+        {/* Password */}
         <div className="mb-6">
           <label className="block text-sm font-medium text-gray-700 mb-1.5">
             Password
@@ -88,7 +97,7 @@ export default function LoginPage() {
           </div>
         </div>
 
-        {/* Submit button */}
+        {/* Submit */}
         <button
           onClick={handleLogin}
           className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-lg transition-all"
@@ -106,6 +115,5 @@ export default function LoginPage() {
 
       </div>
     </div>
-    
   );
 }

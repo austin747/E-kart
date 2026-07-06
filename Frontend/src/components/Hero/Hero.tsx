@@ -1,27 +1,78 @@
-import { useState } from "react";
-import { PRODUCTS, CATEGORIES, type Product, type Category } from "../../constant/HeroLink";
+import { useState, useEffect } from "react";
+import { apiGetPublicProducts } from "../../services/api"; 
+import { type Product, type Category, CATEGORIES } from "../../constant/HeroLink";
 import { RiShoppingBagLine, RiMagicLine } from "react-icons/ri";
+
+interface BackendProductShape {
+  _id: string;
+  name: string;
+  category: string;
+  image?: string;
+  price: number;
+  description: string;
+  rating?: number;
+  reviews?: number;
+}
 
 interface Props {
   onAddToCart: (product: Product) => void;
 }
 
 export default function HeroSection({ onAddToCart }: Props) {
+  const [products, setProducts] = useState<Product[]>([]);
   const [category, setCategory] = useState<Category>("all");
+  const [loading, setLoading] = useState<boolean>(true);
+
+  useEffect(() => {
+    async function loadCatalog() {
+      try {
+        const data = await apiGetPublicProducts();
+        if (data.success) {
+          const sanitized = data.products.map((p: BackendProductShape) => ({
+            id: p._id, // Clean string matching tracking assignment
+            name: p.name,
+            category: p.category as Category,
+            image: p.image || "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&q=80",
+            price: p.price,
+            description: p.description,
+            rating: p.rating || 4.5,
+            reviews: p.reviews || 0,
+          }));
+          setProducts(sanitized);
+        }
+      } catch (err) {
+        console.error("Failed to load approved catalog context:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadCatalog();
+  }, []);
 
   const filteredProducts =
     category === "all"
-      ? PRODUCTS
-      : PRODUCTS.filter((p) => p.category === category);
+      ? products
+      : products.filter((p) => p.category === category);
 
-  // Dynamically calculate product counts for sidebar badges
   const getProductCount = (cat: Category) => {
-    if (cat === "all") return PRODUCTS.length;
-    return PRODUCTS.filter((p) => p.category === cat).length;
+    if (cat === "all") return products.length;
+    return products.filter((p) => p.category === cat).length;
   };
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#0d0d1a] text-purple-400 font-bold tracking-wider">
+        <div className="flex flex-col items-center gap-3">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-purple-500 border-t-transparent"></div>
+          <span>Loading verified system listings...</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <section className="relative min-h-screen w-full overflow-hidden bg-[#0d0d1a] py-12 text-white selection:bg-pink-500 selection:text-white">
+      
       
       {/* AMBIENT BACKGROUND SYSTEM */}
       <style>{`
@@ -52,20 +103,19 @@ export default function HeroSection({ onAddToCart }: Props) {
           backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`
         }}
       />
-
-      {/* MAIN CONTAINER */}
+      
+      <div className="absolute top-0 left-1/4 h-[500px] w-[500px] -translate-x-1/2 rounded-full bg-purple-900/20 blur-[120px]" />
+      <div className="absolute bottom-0 right-1/4 h-[500px] w-[500px] translate-x-1/2 rounded-full bg-pink-900/15 blur-[120px]" />
+      
       <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col lg:flex-row gap-8">
 
-          {/* SIDEBAR */}
+          {/* SIDEBAR NAVIGATION */}
           <div className="w-full lg:w-64 flex-shrink-0 rounded-2xl border border-white/10 bg-white/[0.03] p-5 backdrop-blur-xl shadow-2xl h-fit">
             <div className="flex items-center gap-2 mb-5 px-1">
               <RiMagicLine className="text-purple-400 text-lg animate-pulse" />
-              <h2 className="text-xs font-bold uppercase tracking-widest text-purple-400">
-                Discover Styles
-              </h2>
+              <h2 className="text-xs font-bold uppercase tracking-widest text-purple-400">Discover Styles</h2>
             </div>
-
             <div className="flex lg:flex-col gap-2 overflow-x-auto pb-3 lg:pb-0 scrollbar-none">
               {CATEGORIES.map((item: Category) => {
                 const isActive = category === item;
@@ -80,9 +130,7 @@ export default function HeroSection({ onAddToCart }: Props) {
                     }`}
                   >
                     <span>{item}</span>
-                    <span className={`text-xs px-2 py-0.5 rounded-full ${
-                      isActive ? "bg-white/20 text-white" : "bg-white/5 text-white/40"
-                    }`}>
+                    <span className={`text-xs px-2 py-0.5 rounded-full ${isActive ? "bg-white/20 text-white" : "bg-white/5 text-white/40"}`}>
                       {getProductCount(item)}
                     </span>
                   </button>
@@ -91,85 +139,66 @@ export default function HeroSection({ onAddToCart }: Props) {
             </div>
           </div>
 
-          {/* MAIN CONTENT AREA */}
+          {/* CATALOG MAIN STOREFRONT GRID */}
           <div className="flex-1 flex flex-col gap-6">
-            
-            {/* PROMO SPOTLIGHT BANNER */}
             <div className="relative w-full rounded-2xl overflow-hidden border border-white/10 bg-gradient-to-r from-purple-900/40 via-pink-900/20 to-transparent p-6 sm:p-8 backdrop-blur-md shadow-xl">
               <div className="max-w-md relative z-10">
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-pink-500/10 px-3 py-1 text-xs font-bold tracking-wider text-pink-400 border border-pink-500/20 mb-3">
-                  🔥 LIMITED SEASON OFFER
+                  🔥 LIVE CATALOGUE
                 </span>
-                <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white mb-2">
-                  Elevate Your Daily Setup
-                </h1>
-                <p className="text-sm text-white/60 mb-4">
-                  Experience premium hand-picked essentials engineered for modern aesthetics and unparalleled durability.
-                </p>
-              </div>
-              <div className="absolute top-1/2 right-6 -translate-y-1/2 text-white/5 hidden md:block select-none pointer-events-none">
-                <RiShoppingBagLine size={140} />
+                <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white mb-2">Elevate Your Daily Setup</h1>
+                <p className="text-sm text-white/60">Hand-picked premium accessories verified by E-Kart administrative operations.</p>
               </div>
             </div>
 
-            {/* DYNAMIC PRODUCTS GRID */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
-              {filteredProducts.map((product: Product) => (
-                <div
-                  key={product.id}
-                  className="group relative flex flex-col justify-between rounded-2xl border border-white/[0.06] bg-gradient-to-b from-white/[0.06] to-white/[0.01] backdrop-blur-md overflow-hidden transition-all duration-300 hover:border-white/[0.18] hover:shadow-[0_22px_45px_rgba(0,0,0,0.45)]"
-                >
-                  {/* Clean Product Image Container */}
-                  <div className="relative h-56 w-full overflow-hidden bg-white/5">
-                    <img
-                      src={product.image}
-                      alt={product.name}
-                      className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
-                    />
+            {/* PRODUCT GRID MAP */}
+            {filteredProducts.length === 0 ? (
+              <div className="flex flex-col items-center justify-center rounded-2xl border border-white/5 bg-white/[0.02] p-16 text-center text-white/40">
+                <p className="text-lg font-medium">No live items found in this section</p>
+                <p className="text-xs max-w-xs mt-1">Products added by retailers must be authorized through the admin panel before displaying here.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+                {filteredProducts.map((product: Product) => (
+                  <div 
+                    key={product.id} 
+                    className="group relative flex flex-col justify-between rounded-2xl border border-white/[0.06] bg-gradient-to-b from-white/[0.06] to-white/1 backdrop-blur-md overflow-hidden transition-all duration-300 hover:border-purple-500/30 hover:shadow-xl hover:shadow-purple-500/5"
+                  >
+                    <div className="relative h-56 w-full overflow-hidden bg-white/5">
+                      <img 
+                        src={product.image} 
+                        alt={product.name} 
+                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" 
+                      />
+                    </div>
                     
-                    {/* Minimal Top-Left Category Badge */}
-                    <div className="absolute top-3 left-3 rounded-md bg-black/50 backdrop-blur-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-purple-300 border border-white/5">
-                      {product.category}
-                    </div>
-                  </div>
-
-                  {/* Meta/Content Information */}
-                  <div className="p-5 flex-1 flex flex-col justify-between">
-                    <div>
-                      <h3 className="font-bold text-lg text-white group-hover:text-purple-300 transition-colors duration-200 line-clamp-1">
-                        {product.name}
-                      </h3>
-                      <p className="text-xs text-white/50 mt-1.5 line-clamp-2 leading-relaxed">
-                        {product.description || "Premium standard item created using environmentally friendly, high-grade materials."}
-                      </p>
-                    </div>
-
-                    <div className="mt-5">
-                      <div className="flex justify-between items-center mb-4">
-                        <div className="flex flex-col">
-                          <span className="text-xs text-white/30 uppercase font-bold tracking-wider">Price</span>
-                          <span className="text-xl font-extrabold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-                            ₹{product.price.toLocaleString()}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-1 rounded-lg bg-amber-500/10 px-2.5 py-1 text-xs font-bold text-amber-400 border border-amber-500/20 shadow-sm">
-                          ⭐ {product.rating}
-                        </div>
+                    <div className="p-5 flex-1 flex flex-col justify-between">
+                      <div>
+                        <span className="text-xs font-bold uppercase tracking-wider text-purple-400/80">{product.category}</span>
+                        <h3 className="font-bold text-lg text-white group-hover:text-purple-300 transition-colors mt-0.5">{product.name}</h3>
+                        <p className="text-xs text-white/50 mt-1.5 line-clamp-2">{product.description}</p>
                       </div>
-
-                      {/* CTA Button */}
-                      <button
-                        onClick={() => onAddToCart(product)}
-                        className="relative w-full overflow-hidden rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 py-3 text-sm font-bold text-white shadow-lg shadow-purple-500/10 transition-all duration-300 hover:from-purple-600 hover:to-pink-600 active:scale-[0.97] border-t border-white/20"
-                      >
-                        Add to Cart
-                      </button>
+                      
+                      <div className="mt-5">
+                        <div className="flex justify-between items-center mb-4">
+                          <span className="text-xl font-extrabold text-white">₹{product.price.toLocaleString()}</span>
+                          <div className="flex items-center gap-1 text-xs text-amber-400 font-bold bg-amber-500/10 px-2 py-1 rounded-lg border border-amber-500/20">
+                            ★ {product.rating}
+                          </div>
+                        </div>
+                        <button 
+                          onClick={() => onAddToCart(product)} 
+                          className="flex w-full items-center justify-center gap-2 rounded-xl bg-linear-to-r from-purple-500 to-pink-500 py-3 text-sm font-bold text-white transition-all duration-300 hover:opacity-90 active:scale-[0.98]"
+                        >
+                          <RiShoppingBagLine />
+                          Add to Cart
+                        </button>
+                      </div>
                     </div>
                   </div>
-
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
 
         </div>

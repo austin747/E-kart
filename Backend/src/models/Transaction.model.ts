@@ -1,41 +1,35 @@
 import mongoose, { Document, Schema } from "mongoose";
 
-export type TransactionStatus = "PENDING" | "COMPLETE" | "FAILED" | "CANCELED";
-
-interface TransactionItem {
+export interface ITransactionItem {
   productId: string;
   name: string;
-  image: string;
   price: number;
   quantity: number;
+  image?: string;
 }
 
 export interface ITransaction extends Document {
-  userId: mongoose.Types.ObjectId;
-  transactionUuid: string;     // our own unique ID, sent to eSewa
-  productCode: string;         // eSewa merchant code (EPAYTEST for sandbox)
-  items: TransactionItem[];
+  userId: string;
+  orderId: string;
+  transactionUuid: string;
+  productCode: string;
+  items: ITransactionItem[];
   totalAmount: number;
-  status: TransactionStatus;
-  esewaTransactionCode?: string;  // eSewa's own reference code, filled in after verification
-  createdAt: Date;
-  updatedAt: Date;
+  status: "PENDING" | "COMPLETE" | "FAILED" | "APPROVED"; // ✅ Added APPROVED type
+  esewaTransactionCode?: string;
 }
-
-const TransactionItemSchema = new Schema<TransactionItem>({
-  productId: { type: String, required: true },
-  name:      { type: String, required: true },
-  image:     { type: String, required: true },
-  price:     { type: Number, required: true },
-  quantity:  { type: Number, required: true },
-});
 
 const TransactionSchema = new Schema<ITransaction>(
   {
     userId: {
-      type: Schema.Types.ObjectId,
-      ref: "User",
+      type: String,
       required: true,
+    },
+    orderId: {
+      type: String,
+      required: true,
+      default: () => `ORD-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+      unique: true,
     },
     transactionUuid: {
       type: String,
@@ -46,24 +40,32 @@ const TransactionSchema = new Schema<ITransaction>(
       type: String,
       required: true,
     },
-    items: {
-      type: [TransactionItemSchema],
-      required: true,
-    },
+    items: [
+      {
+        productId: { type: String, required: true },
+        name: { type: String, required: true },
+        price: { type: Number, required: true },
+        quantity: { type: Number, required: true },
+        image: { type: String },
+      },
+    ],
     totalAmount: {
       type: Number,
       required: true,
+      min: 0,
     },
     status: {
       type: String,
-      enum: ["PENDING", "COMPLETE", "FAILED", "CANCELED"],
+      enum: ["PENDING", "COMPLETE", "FAILED", "APPROVED"], // ✅ Added APPROVED enum option
       default: "PENDING",
     },
     esewaTransactionCode: {
       type: String,
     },
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+  }
 );
 
 export default mongoose.model<ITransaction>("Transaction", TransactionSchema);

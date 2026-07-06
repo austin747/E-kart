@@ -1,32 +1,56 @@
 import { Response } from "express";
-import Cart from "../models/Cart.model";
+import Cart, { ICart } from "../models/Cart.model";
 import { AuthRequest } from "../middleware/auth.middleware";
 
-// ── GET /api/cart ─────────────────────────────────────────
-export async function getCart(req: AuthRequest, res: Response): Promise<void> {
+// ─────────────────────────────────────────────
+// GET CART
+// GET /api/cart
+// ─────────────────────────────────────────────
+export async function getCart(
+  req: AuthRequest,
+  res: Response
+): Promise<void> {
   try {
     const cart = await Cart.findOne({ userId: req.userId });
 
     if (!cart) {
       res.status(200).json({
         success: true,
-        cart: { items: [], totalAmount: 0, totalItems: 0 },
+        cart: {
+          items: [],
+          totalAmount: 0,
+          totalItems: 0,
+        },
       });
       return;
     }
 
-    res.status(200).json({ success: true, cart });
+    res.status(200).json({
+      success: true,
+      cart,
+    });
   } catch (err) {
-    res.status(500).json({ success: false, message: "Server error", error: err });
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: err,
+    });
   }
 }
 
-// ── POST /api/cart/add ────────────────────────────────────
-export async function addToCart(req: AuthRequest, res: Response): Promise<void> {
+// ─────────────────────────────────────────────
+// ADD TO CART
+// POST /api/cart/add
+// ─────────────────────────────────────────────
+export async function addToCart(
+  req: AuthRequest,
+  res: Response
+): Promise<void> {
   try {
-    const { productId, name, image, price, quantity = 1 } = req.body;
+    const { productId, name, image, price, quantity } = req.body;
 
-    if (!productId || !name || !image || !price) {
+    // ✅ Validation
+    if (!productId || !name || !image || price === undefined) {
       res.status(400).json({
         success: false,
         message: "productId, name, image and price are required",
@@ -34,26 +58,44 @@ export async function addToCart(req: AuthRequest, res: Response): Promise<void> 
       return;
     }
 
+    const priceNum = Number(price);
+    const qty = Number(quantity) || 1;
+
     let cart = await Cart.findOne({ userId: req.userId });
 
     if (!cart) {
       // Create new cart
       cart = new Cart({
         userId: req.userId,
-        items: [{ productId, name, image, price, quantity }],
+        items: [
+          {
+            productId,
+            name,
+            image,
+            price: priceNum,
+            quantity: qty,
+          },
+        ],
       });
+
       cart.calculateTotals();
       await cart.save();
     } else {
-      // Check if item already exists
+      // Check existing item
       const existingIndex = cart.items.findIndex(
-        (item) => String(item.productId) === String(productId)
+        (item) => item.productId.toString() === productId
       );
 
       if (existingIndex > -1) {
-        cart.items[existingIndex].quantity += quantity;
+        cart.items[existingIndex].quantity += qty;
       } else {
-        cart.items.push({ productId, name, image, price, quantity });
+        cart.items.push({
+          productId,
+          name,
+          image,
+          price: priceNum,
+          quantity: qty,
+        });
       }
 
       cart.calculateTotals();
@@ -66,12 +108,22 @@ export async function addToCart(req: AuthRequest, res: Response): Promise<void> 
       cart,
     });
   } catch (err) {
-    res.status(500).json({ success: false, message: "Server error", error: err });
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: err,
+    });
   }
 }
 
-// ── PUT /api/cart/update ──────────────────────────────────
-export async function updateCartItem(req: AuthRequest, res: Response): Promise<void> {
+// ─────────────────────────────────────────────
+// UPDATE CART ITEM
+// PUT /api/cart/update
+// ─────────────────────────────────────────────
+export async function updateCartItem(
+  req: AuthRequest,
+  res: Response
+): Promise<void> {
   try {
     const { productId, quantity } = req.body;
 
@@ -83,25 +135,34 @@ export async function updateCartItem(req: AuthRequest, res: Response): Promise<v
       return;
     }
 
+    const qty = Number(quantity);
+
     const cart = await Cart.findOne({ userId: req.userId });
+
     if (!cart) {
-      res.status(404).json({ success: false, message: "Cart not found" });
+      res.status(404).json({
+        success: false,
+        message: "Cart not found",
+      });
       return;
     }
 
     const itemIndex = cart.items.findIndex(
-      (item) => String(item.productId) === String(productId)
+      (item) => item.productId.toString() === productId
     );
 
     if (itemIndex === -1) {
-      res.status(404).json({ success: false, message: "Item not in cart" });
+      res.status(404).json({
+        success: false,
+        message: "Item not in cart",
+      });
       return;
     }
 
-    if (quantity < 1) {
+    if (qty < 1) {
       cart.items.splice(itemIndex, 1);
     } else {
-      cart.items[itemIndex].quantity = quantity;
+      cart.items[itemIndex].quantity = qty;
     }
 
     cart.calculateTotals();
@@ -113,23 +174,37 @@ export async function updateCartItem(req: AuthRequest, res: Response): Promise<v
       cart,
     });
   } catch (err) {
-    res.status(500).json({ success: false, message: "Server error", error: err });
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: err,
+    });
   }
 }
 
-// ── DELETE /api/cart/remove/:productId ───────────────────
-export async function removeFromCart(req: AuthRequest, res: Response): Promise<void> {
+// ─────────────────────────────────────────────
+// REMOVE ITEM
+// DELETE /api/cart/remove/:productId
+// ─────────────────────────────────────────────
+export async function removeFromCart(
+  req: AuthRequest,
+  res: Response
+): Promise<void> {
   try {
     const { productId } = req.params;
 
     const cart = await Cart.findOne({ userId: req.userId });
+
     if (!cart) {
-      res.status(404).json({ success: false, message: "Cart not found" });
+      res.status(404).json({
+        success: false,
+        message: "Cart not found",
+      });
       return;
     }
 
     cart.items = cart.items.filter(
-      (item) => String(item.productId) !== String(productId)
+      (item) => item.productId.toString() !== productId
     );
 
     cart.calculateTotals();
@@ -141,16 +216,30 @@ export async function removeFromCart(req: AuthRequest, res: Response): Promise<v
       cart,
     });
   } catch (err) {
-    res.status(500).json({ success: false, message: "Server error", error: err });
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: err,
+    });
   }
 }
 
-// ── DELETE /api/cart/clear ────────────────────────────────
-export async function clearCart(req: AuthRequest, res: Response): Promise<void> {
+// ─────────────────────────────────────────────
+// CLEAR CART
+// DELETE /api/cart/clear
+// ─────────────────────────────────────────────
+export async function clearCart(
+  req: AuthRequest,
+  res: Response
+): Promise<void> {
   try {
     const cart = await Cart.findOne({ userId: req.userId });
+
     if (!cart) {
-      res.status(404).json({ success: false, message: "Cart not found" });
+      res.status(404).json({
+        success: false,
+        message: "Cart not found",
+      });
       return;
     }
 
@@ -164,6 +253,10 @@ export async function clearCart(req: AuthRequest, res: Response): Promise<void> 
       cart,
     });
   } catch (err) {
-    res.status(500).json({ success: false, message: "Server error", error: err });
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: err,
+    });
   }
 }

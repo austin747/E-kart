@@ -9,6 +9,8 @@ export interface IProduct extends Document {
   rating: number;
   reviews: number;
   stock: number;
+  ownerId?: mongoose.Types.ObjectId; // Optional (?) so older seeded items don't throw validation errors
+  isApproved: boolean;
 }
 
 const ProductSchema = new Schema<IProduct>(
@@ -50,6 +52,17 @@ const ProductSchema = new Schema<IProduct>(
       type: Number,
       default: 100,
       min: 0,
+    },
+    // ── NEW TENANCY FIELD ─────────────────────────────
+    ownerId: {
+      type: Schema.Types.ObjectId,
+      ref: "User", // Links directly to your user model collection
+      required: false, // Set to false so old hardcoded items/seeds stay valid
+    },
+    // ── NEW APPROVAL FLAG ─────────────────────────────
+    isApproved: {
+      type: Boolean,
+      default: true, // 👈 Setting this to TRUE by default ensures your current 8 hardcoded catalog items stay visible immediately!
     },
   },
   { timestamps: true }

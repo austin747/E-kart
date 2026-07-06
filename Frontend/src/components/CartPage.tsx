@@ -9,7 +9,11 @@ import {
   RiSubtractLine,
 } from "react-icons/ri";
 import { useAuth } from "../constant/useAuth";
-import { apiInitiatePayment, type PaymentInitiateResponse } from "../services/api";
+import { 
+  apiInitiatePayment, 
+  apiCheckout, // ✅ Imported successfully to manage multi-stage checkout order generation
+  type PaymentInitiateResponse 
+} from "../services/api";
 import EsewaRedirectForm from "../components/EsewaRedirectForm";
 
 export default function CartPage() {
@@ -34,17 +38,33 @@ export default function CartPage() {
   }
   const orderTotal = cartTotal + delivery;
 
+  // ✅ FIXED: sequential step verification process to ensure order maps inside DB collections before processing eSewa initialization keys
   async function handleCheckout() {
     if (!token) return;
 
-    setCheckoutError("");
-    const res = await apiInitiatePayment(token);
+    try {
+      setCheckoutError("");
+      
+      // Step 1: Create the pending order document in MongoDB
+      const orderCreationResult = await apiCheckout(token);
+      
+      if (!orderCreationResult.success) {
+        setCheckoutError(orderCreationResult.message || "Failed to finalize cart items to an order profile.");
+        return;
+      }
 
-    if (res.success && res.paymentUrl && res.paymentData) {
-      setPaymentInfo(res);
-      setRedirecting(true);
-    } else {
-      setCheckoutError(res.message || "Could not start payment. Please try again.");
+      // Step 2: Since order generation succeeded, trigger eSewa signature hashes safely
+      const res = await apiInitiatePayment(token);
+
+      if (res.success && res.paymentUrl && res.paymentData) {
+        setPaymentInfo(res);
+        setRedirecting(true);
+      } else {
+        setCheckoutError(res.message || "Could not start payment. Please try again.");
+      }
+    } catch (err) { // 👈 TypeScript automatically infers this as 'unknown'
+      console.error("Checkout process unexpected exception error:", err); 
+      setCheckoutError("A service connectivity fault occurred processing checkout protocols.");
     }
   }
 

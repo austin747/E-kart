@@ -1,7 +1,7 @@
 // src/pages/RegisterPage.tsx
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { RiUserLine, RiLockLine, RiMailLine, RiShoppingBag3Line } from "react-icons/ri";
+import { RiUserLine, RiLockLine, RiMailLine, RiShoppingBag3Line, RiStore2Line, RiUser3Line } from "react-icons/ri";
 import { useAuth } from "../constant/useAuth";
 
 export default function RegisterPage() {
@@ -12,37 +12,37 @@ export default function RegisterPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
+  const [role, setRole] = useState<"customer" | "retailer">("customer");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
 
- async function handleRegister() {
-  // basic validation
-  if (name === "" || email === "" || password === "" || confirm === "") {
-    setError("All fields are required.");
-    return;
-  }
-  if (password !== confirm) {
-    setError("Passwords do not match.");
-    return;
-  }
-  if (password.length < 6) {
-    setError("Password must be at least 6 characters.");
-    return;
-  }
+  async function handleRegister() {
+    if (name === "" || email === "" || password === "" || confirm === "") {
+      setError("All fields are required.");
+      return;
+    }
+    if (password !== confirm) {
+      setError("Passwords do not match.");
+      return;
+    }
+    if (password.length < 6) {
+      setError("Password must be at least 6 characters.");
+      return;
+    }
 
-  const success = await register(name, email, password);  // ✅ add await
+    const success = await register(name, email, password, role);
 
-  if (success === false) {
-    setError("An account with this email already exists.");
-    return;
+    if (success === false) {
+      setError("An account with this email already exists.");
+      return;
+    }
+
+    setSuccess(true);
+
+    setTimeout(function () {
+      navigate("/login");
+    }, 1500);
   }
-
-  setSuccess(true);
-
-  setTimeout(function () {
-    navigate("/login");
-  }, 1500);
-}
 
   return (
     <div className="min-h-screen bg-linear-to-br from-blue-50 to-blue-100 flex items-center justify-center px-4">
@@ -70,6 +70,40 @@ export default function RegisterPage() {
             {error}
           </div>
         )}
+
+        {/* Role selector */}
+        <div className="mb-5">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            I want to join as
+          </label>
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              type="button"
+              onClick={() => setRole("customer")}
+              className={`flex flex-col items-center gap-1.5 py-3 rounded-xl border-2 transition-all ${
+                role === "customer"
+                  ? "border-blue-600 bg-blue-50 text-blue-600"
+                  : "border-gray-200 text-gray-400 hover:border-gray-300"
+              }`}
+            >
+              <RiUser3Line size={22} />
+              <span className="text-sm font-semibold">Customer</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setRole("retailer")}
+              className={`flex flex-col items-center gap-1.5 py-3 rounded-xl border-2 transition-all ${
+                role === "retailer"
+                  ? "border-blue-600 bg-blue-50 text-blue-600"
+                  : "border-gray-200 text-gray-400 hover:border-gray-300"
+              }`}
+            >
+              <RiStore2Line size={22} />
+              <span className="text-sm font-semibold">Retailer</span>
+            </button>
+          </div>
+        </div>
 
         {/* Name field */}
         <div className="mb-4">

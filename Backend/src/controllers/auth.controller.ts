@@ -1,16 +1,16 @@
 import { Request, Response } from "express";
 import bcrypt from "bcryptjs";
-import User from "../models/User.model";
+import User, {UserRole} from "../models/User.model";
 import jwt, { SignOptions } from "jsonwebtoken"; 
 
 // ── helper ───────────────────────────────────────────────
-function generateToken(userId: string): string {
+function generateToken(userId: string, role: UserRole): string {
   const options: SignOptions = {
     expiresIn: "7d",  // ✅ hardcoded string literal, not from process.env
   };
 
   return jwt.sign(
-    { userId },
+    { userId, role },
     process.env.JWT_SECRET as string,
     options
   );
@@ -19,7 +19,7 @@ function generateToken(userId: string): string {
 // ── POST /api/auth/register ──────────────────────────────
 export async function register(req: Request, res: Response): Promise<void> {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, password, role } = req.body;
 
     if (!name || !email || !password) {
       res.status(400).json({
@@ -28,6 +28,9 @@ export async function register(req: Request, res: Response): Promise<void> {
       });
       return;
     }
+
+     const assignedRole: UserRole =
+      role === "retailer" ? "retailer" : "customer";
 
     const existing = await User.findOne({ email });
     if (existing) {
@@ -44,9 +47,10 @@ export async function register(req: Request, res: Response): Promise<void> {
       name,
       email,
       password: hashedPassword,
+       role: assignedRole,
     });
 
-    const token = generateToken(String(user._id));
+    const token = generateToken(String(user._id), user.role);
 
     res.status(201).json({
       success: true,
@@ -56,6 +60,7 @@ export async function register(req: Request, res: Response): Promise<void> {
         id:    user._id,
         name:  user.name,
         email: user.email,
+        role:  user.role,
       },
     });
   } catch (err) {
@@ -98,7 +103,7 @@ export async function login(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    const token = generateToken(String(user._id));
+    const token = generateToken(String(user._id), user.role);
 
     res.status(200).json({
       success: true,
@@ -108,6 +113,7 @@ export async function login(req: Request, res: Response): Promise<void> {
         id:    user._id,
         name:  user.name,
         email: user.email,
+         role:  user.role,
       },
     });
   } catch (err) {

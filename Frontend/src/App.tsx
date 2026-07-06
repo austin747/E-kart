@@ -7,11 +7,19 @@ import LoginPage from "./components/LoginPage";
 import RegisterPage from "./components/RegisterPage";
 import CartPage from "./components/CartPage";
 
-import { AuthProvider } from "./components/AuthContext";
-import { useAuth } from "./constant/useAuth";
+import AdminDashboard from "./pages/dashboard/AdminDashboard";
+import RetailerDashboard from "./pages/dashboard/RetailerDashboard";
+
 import PaymentSuccess from "./pages/PaymentSuccess";
 import PaymentFailure from "./pages/PaymentFailure";
+
+import { AuthProvider } from "./components/AuthContext";
+import { useAuth } from "./constant/useAuth";
+
 import { Toaster } from "react-hot-toast";
+
+import ProtectedRoute from "./routes/ProtectedRoute";
+import RoleGuard from "./routes/RoleGuard";
 
 function ShopLayout() {
   const { addToCart } = useAuth();
@@ -28,12 +36,49 @@ export default function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
-        <Toaster position="top-center" reverseOrder={false} />
+        <Toaster position="top-center" />
+
         <Routes>
-          <Route path="/"               element={<ShopLayout />} />
-          <Route path="/login"          element={<LoginPage />} />
-          <Route path="/register"       element={<RegisterPage />} />
-          <Route path="/cart"           element={<CartPage />} />
+          {/* PUBLIC */}
+          <Route path="/" element={<ShopLayout />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+
+          {/* CART (PROTECTED) */}
+          <Route
+            path="/cart"
+            element={
+              <ProtectedRoute>
+                <CartPage />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* ADMIN DASHBOARD */}
+          <Route
+            path="/dashboard/admin"
+            element={
+              <ProtectedRoute>
+                <RoleGuard allowedRoles={["admin"]}>
+                  <AdminDashboard />
+                </RoleGuard>
+              </ProtectedRoute>
+            }
+          />
+
+          {/* RETAILER DASHBOARD */}
+          <Route
+            path="/dashboard/retailer"
+            element={
+              <ProtectedRoute>
+                <RoleGuard allowedRoles={["retailer", "admin"]}>
+                  <RetailerDashboard />
+                </RoleGuard>
+              </ProtectedRoute>
+            }
+          />
+
+          {/* PAYMENT */}
           <Route path="/payment-success" element={<PaymentSuccess />} />
           <Route path="/payment-failure" element={<PaymentFailure />} />
         </Routes>
