@@ -148,6 +148,17 @@ export default function Navbar() {
                 <span className="hidden sm:inline text-sm text-white/80">
                   Hi, {user.name.split(" ")[0]}
                 </span>
+
+{(user.role === "retailer" || user.role === "admin") && (
+      <button
+        onClick={() => navigate(`/dashboard/${user.role}`)}
+        className="flex items-center gap-1.5 bg-white/20 hover:bg-white/30 border border-white/40 px-3 py-1.5 rounded-full text-sm font-semibold"
+      >
+        <RiUserLine size={16} />
+        <span className="hidden sm:inline">Dashboard</span>
+      </button>
+    )}
+
                 <button
                   onClick={logout}
                   className="flex items-center gap-1.5 bg-red-500 hover:bg-red-400 px-3 py-1.5 rounded-full text-sm font-semibold"

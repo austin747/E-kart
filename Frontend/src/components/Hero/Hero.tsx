@@ -32,7 +32,7 @@ export default function HeroSection({ onAddToCart }: Props) {
             id: p._id, // Clean string matching tracking assignment
             name: p.name,
             category: p.category as Category,
-            image: p.image || "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&q=80",
+            image: p.image || "/",
             price: p.price,
             description: p.description,
             rating: p.rating || 4.5,

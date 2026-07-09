@@ -1,0 +1,28 @@
+# Environment variables
+.env
+.env.local
+.env.*.local
+**/.env
+
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Build output
+dist/
+build/
+**/dist/
+**/build/
+
+# Uploaded files (backend uploads folder — usually shouldn't be in git)
+backend/uploads/
+**/uploads/*
+!**/uploads/.gitkeep
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS/editor junk
+.DS_Store
+.vscode/

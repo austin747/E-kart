@@ -33,8 +33,8 @@ router.post("/add", upload.single("image"), async (req: Request, res: Response):
     let imagePath = ""; 
     
     if (req.file) {
-      imagePath = `uploads/${req.file.filename}`;
-    }
+  imagePath = `http://localhost:5000/uploads/${req.file.filename}`;
+}
 
     const newProduct = await Product.create({
       name,
@@ -55,6 +55,34 @@ router.post("/add", upload.single("image"), async (req: Request, res: Response):
       success: false,
       message: "Failed to upload and store item properties",
       error: err.message
+    });
+  }
+});
+
+
+router.delete("/products/:id", async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+
+    const deleted = await Product.findByIdAndDelete(id);
+
+    if (!deleted) {
+      res.status(404).json({
+        success: false,
+        message: "Product not found",
+      });
+      return;
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Product deleted successfully",
+    });
+  } catch (err: any) {
+    res.status(500).json({
+      success: false,
+      message: "Failed to delete product",
+      error: err.message,
     });
   }
 });
