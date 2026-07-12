@@ -7,6 +7,9 @@ export interface IUser extends Document {
   email: string;
   password: string;
   role: UserRole;
+  isVerified: boolean;
+  verificationToken?: string;
+  verificationTokenExpires?: Date;
   createdAt: Date;
 }
 
@@ -35,6 +38,18 @@ const UserSchema = new Schema<IUser>(
       type: String,
       enum: ["customer", "retailer", "admin"],
       default: "customer",
+    },
+    isVerified: {
+      type: Boolean,
+      default: false,
+    },
+    verificationToken: {
+      type: String,
+      select: false,
+    },
+    verificationTokenExpires: {
+      type: Date,
+      select: false,
     },
   },
   { timestamps: true }

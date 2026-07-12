@@ -68,6 +68,13 @@ export async function apiRegister(name: string, email: string, password: string,
   return res.json();
 }
 
+// ── ADD THIS to services/api.ts, in the AUTH section ──
+
+export async function apiVerifyEmail(token: string): Promise<ApiResponse> {
+  const res = await fetch(`${BASE}/auth/verify-email/${token}`);
+  return res.json();
+}
+
 export async function apiLogin(email: string, password: string): Promise<ApiResponse> {
   const res = await fetch(`${BASE}/auth/login`, {
     method: "POST",

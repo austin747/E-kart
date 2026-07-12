@@ -1,12 +1,14 @@
 import { Request, Response } from "express";
 import bcrypt from "bcryptjs";
-import User, {UserRole} from "../models/User.model";
-import jwt, { SignOptions } from "jsonwebtoken"; 
+import crypto from "crypto";
+import User, { UserRole } from "../models/User.model";
+import jwt, { SignOptions } from "jsonwebtoken";
+import { sendVerificationEmail } from "../utils/sendEmail";
 
 // ── helper ───────────────────────────────────────────────
 function generateToken(userId: string, role: UserRole): string {
   const options: SignOptions = {
-    expiresIn: "7d",  // ✅ hardcoded string literal, not from process.env
+    expiresIn: "7d",
   };
 
   return jwt.sign(
@@ -14,6 +16,10 @@ function generateToken(userId: string, role: UserRole): string {
     process.env.JWT_SECRET as string,
     options
   );
+}
+
+function hashToken(rawToken: string): string {
+  return crypto.createHash("sha256").update(rawToken).digest("hex");
 }
 
 // ── POST /api/auth/register ──────────────────────────────
@@ -29,7 +35,7 @@ export async function register(req: Request, res: Response): Promise<void> {
       return;
     }
 
-     const assignedRole: UserRole =
+    const assignedRole: UserRole =
       role === "retailer" ? "retailer" : "customer";
 
     const existing = await User.findOne({ email });
@@ -43,25 +49,81 @@ export async function register(req: Request, res: Response): Promise<void> {
 
     const hashedPassword = await bcrypt.hash(password, 12);
 
+    // Generate a raw token to email, store only its hash in the DB
+    const rawToken = crypto.randomBytes(32).toString("hex");
+    const tokenHash = hashToken(rawToken);
+    const tokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24h
+
     const user = await User.create({
       name,
       email,
       password: hashedPassword,
-       role: assignedRole,
+      role: assignedRole,
+      isVerified: false,
+      verificationToken: tokenHash,
+      verificationTokenExpires: tokenExpires,
     });
 
-    const token = generateToken(String(user._id), user.role);
+    try {
+      await sendVerificationEmail(user.email, user.name, rawToken);
+    } catch (emailErr) {
+      // Roll back the user so they aren't stuck unverified with no way to retry
+      await User.findByIdAndDelete(user._id);
+      res.status(500).json({
+        success: false,
+        message: "Could not send verification email. Please try registering again.",
+        error: emailErr,
+      });
+      return;
+    }
 
+    // No JWT issued here — user must verify before they can log in
     res.status(201).json({
       success: true,
-      message: "Registered successfully",
-      token,
-      user: {
-        id:    user._id,
-        name:  user.name,
-        email: user.email,
-        role:  user.role,
-      },
+      message: "Registered successfully. Please check your email to verify your account.",
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: err,
+    });
+  }
+}
+
+// ── GET /api/auth/verify-email/:token ────────────────────
+export async function verifyEmail(req: Request, res: Response): Promise<void> {
+  try {
+    const { token } = req.params;
+
+    if (!token) {
+      res.status(400).json({ success: false, message: "Token is required" });
+      return;
+    }
+
+    const tokenHash = hashToken(token);
+
+    const user = await User.findOne({
+      verificationToken: tokenHash,
+      verificationTokenExpires: { $gt: new Date() },
+    }).select("+verificationToken +verificationTokenExpires");
+
+    if (!user) {
+      res.status(400).json({
+        success: false,
+        message: "Verification link is invalid or has expired",
+      });
+      return;
+    }
+
+    user.isVerified = true;
+    user.verificationToken = undefined;
+    user.verificationTokenExpires = undefined;
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Email verified successfully",
     });
   } catch (err) {
     res.status(500).json({
@@ -103,6 +165,14 @@ export async function login(req: Request, res: Response): Promise<void> {
       return;
     }
 
+    if (!user.isVerified) {
+      res.status(403).json({
+        success: false,
+        message: "Please verify your email before logging in",
+      });
+      return;
+    }
+
     const token = generateToken(String(user._id), user.role);
 
     res.status(200).json({
@@ -110,10 +180,10 @@ export async function login(req: Request, res: Response): Promise<void> {
       message: "Logged in successfully",
       token,
       user: {
-        id:    user._id,
-        name:  user.name,
+        id: user._id,
+        name: user.name,
         email: user.email,
-         role:  user.role,
+        role: user.role,
       },
     });
   } catch (err) {

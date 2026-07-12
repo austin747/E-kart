@@ -10,6 +10,7 @@ import CartPage from "./components/CartPage";
 import AdminDashboard from "./pages/dashboard/AdminDashboard";
 import RetailerDashboard from "./pages/dashboard/RetailerDashboard";
 
+import VerifyEmailPage from "./pages/VerifyEmailPage";  
 import PaymentSuccess from "./pages/PaymentSuccess";
 import PaymentFailure from "./pages/PaymentFailure";
 
@@ -43,6 +44,7 @@ export default function App() {
           <Route path="/" element={<ShopLayout />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="/verify-email" element={<VerifyEmailPage />} />
 
           {/* CART (PROTECTED) */}
           <Route
