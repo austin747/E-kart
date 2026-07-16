@@ -1,5 +1,5 @@
-// ✅ FIXED: Changed to absolute URL pointing explicitly to your Express backend port
-const BASE = "http://localhost:5000/api";
+
+const BASE = `${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api`;
 
 interface ApiResponse<T = unknown> {
   success: boolean;
