@@ -274,7 +274,7 @@ export async function apiInitiatePayment(token: string): Promise<PaymentInitiate
   return res.json();
 }
 
-// ── PUBLIC CATALOGUE GATEWAY ─────────────────────────
+// ── PUBLIC CATALOGUE GATEWAY ────────────────
 export async function apiGetPublicProducts(): Promise<{ success: boolean; products: ApiBackendProduct[] }> {
   const res = await fetch(`${BASE}/products`);
   return res.json();
