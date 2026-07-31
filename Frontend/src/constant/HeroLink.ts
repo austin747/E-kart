@@ -1,5 +1,5 @@
 export interface Product {
-  id: string; // 💡 Updated to string to support real MongoDB ObjectIds
+  id: string; // support real MongoDB ObjectIds
   name: string;
   category: string;
   image: string;
