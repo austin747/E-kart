@@ -33,7 +33,7 @@ router.post("/add", upload.single("image"), async (req: Request, res: Response):
     let imagePath = ""; 
     
     if (req.file) {
-  imagePath = `http://localhost:5000/uploads/${req.file.filename}`;
+  const imagePath = req.file ? (req.file as any).path : "";
 }
 
     const newProduct = await Product.create({
